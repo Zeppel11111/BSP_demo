@@ -12,6 +12,7 @@ typedef enum {
     DEBUG_LEVEL_DEBUG = 4,
 } debug_level_t;
 
+
 /* 全局日志开关：改这一行即可控制整个工程的日志输出量 */
 #define DEBUG_GLOBAL_LEVEL   DEBUG_LEVEL_DEBUG
 
@@ -22,5 +23,9 @@ typedef enum {
 #define LOG_W(tag, fmt, ...) do { if (DEBUG_ACTIVE(DEBUG_LEVEL_WARN))  printf("[W][%s] " fmt "\r\n", tag, ##__VA_ARGS__); } while(0)
 #define LOG_I(tag, fmt, ...) do { if (DEBUG_ACTIVE(DEBUG_LEVEL_INFO))  printf("[I][%s] " fmt "\r\n", tag, ##__VA_ARGS__); } while(0)
 #define LOG_D(tag, fmt, ...) do { if (DEBUG_ACTIVE(DEBUG_LEVEL_DEBUG)) printf("[D][%s] " fmt "\r\n", tag, ##__VA_ARGS__); } while(0)
+
+
+
+void LOG_init(void);
 
 #endif /* DEBUG_H */

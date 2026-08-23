@@ -5,12 +5,13 @@
 #include    "cmsis_os.h"
 #include    "Debug.h"
 
-char* TAG = "uart_led_test";
+const char* TAG = "uart_led_test";
 char  rec_data[rec_data_size];
 
 void uart_led_test(void)
 {
 
+    
     LOG_D(TAG,"Hello This is uart_led_test\r\n");
     osDelay(1000);  
     LOG_D(TAG,"可以开始交互了\r\n");
