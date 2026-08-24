@@ -5,7 +5,7 @@
 #include    "cmsis_os.h"
 #include    "Debug.h"
 
-const char* TAG = "uart_led_test";
+static const char* TAG = "uart_led_test";
 char  rec_data[rec_data_size];
 
 void uart_led_test(void)
