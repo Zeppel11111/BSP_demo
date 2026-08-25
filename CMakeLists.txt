@@ -59,12 +59,16 @@ file(GLOB_RECURSE BSP_SOURCES CONFIGURE_DEPENDS
 file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/App/Src/*.c"
 )
+file(GLOB_RECURSE MIDDLEWARE_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/Middleware/Src/*.c"
+)
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${DRIVER_SOURCES}
     ${BSP_SOURCES}
     ${APP_SOURCES}
+    ${MIDDLEWARE_SOURCES}
     # Add user sources here
 )
 
@@ -73,6 +77,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/Driver
     ${CMAKE_SOURCE_DIR}/BSP/Inc
     ${CMAKE_SOURCE_DIR}/App/Inc
+    ${CMAKE_SOURCE_DIR}/Middleware/Inc
+    ${CMAKE_SOURCE_DIR}
     # Add user defined include paths
 )
 
