@@ -29,4 +29,9 @@
 /* ---------- Middleware 插槽：算法卡 ---------- */
 #define CFG_ENABLE_ATTITUDE     1   /* Mahony 姿态解算（依赖 MPU6050 数据） */
 
+/* 字库卡：与 OLED 高度绑定（OLED 显示文字必须用字库），不单独裁剪，
+ * 直接共享 OLED 的开关——OLED=1 字库进固件，OLED=0 字库一并剔除。
+ * 定义在 Middleware 层但无独立开关：改 CFG_ENABLE_OLED 即同时生效。 */
+#define CFG_ENABLE_FONT8X16     CFG_ENABLE_OLED
+
 #endif /* APP_CONFIG_H */

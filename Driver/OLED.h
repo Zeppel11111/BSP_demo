@@ -3,12 +3,14 @@
 
 #include    <stdint.h>
 #include    "bsp_iic.h"
+#include    "font8x16.h"        /* 字库规格常量：OLED_FONT_W/H 取自中间件，杜绝魔法数漂移 */
 #include    "app_config.h"     /* 模块总开关：必须先于本文件包含 */
 
 /* =====================================================================
  * SSD1306 OLED 128x64（I2C 接口，0.96 寸）
  * 与 MPU6050 同款插槽模型：CFG_ENABLE_OLED=1 编译真驱动，
  * =0 时头文件自动换成空桩，调用点（任务）无需任何 #if。
+ * 字库（font8x16，中间件）与 OLED 共享此开关，不单独裁剪。
  * ===================================================================== */
 
 /* ---- 器件地址：SA0 引脚决定（模块背面可焊）---- */
@@ -24,8 +26,8 @@
 #define   OLED_WIDTH          128
 #define   OLED_HEIGHT         64
 #define   OLED_PAGE_NUM       8        /* 64 行 / 8 = 8 页 */
-#define   OLED_FONT_W         8        /* 8x16 字符：宽 8 像素 */
-#define   OLED_FONT_H         16       /* 高 16 像素 = 2 页 */
+#define   OLED_FONT_W         FONT8X16_WIDTH    /* 8x16 字符宽：取自中间件字库规格 */
+#define   OLED_FONT_H         FONT8X16_HEIGHT   /* 字符高 16 = 2 页 */
 #define   OLED_MAX_COL        (OLED_WIDTH  / OLED_FONT_W)   /* 16 字符列 */
 #define   OLED_MAX_ROW        (OLED_HEIGHT / OLED_FONT_H)   /* 4 字符行 */
 
