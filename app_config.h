@@ -24,7 +24,7 @@
 
 /* ---------- Driver 插槽：器件卡 ---------- */
 #define CFG_ENABLE_MPU6050      1   /* MPU6050 六轴传感器（挂在 I2C2） */
-#define CFG_ENABLE_OLED         0   /* SSD1306 OLED（预留，未接线） */
+#define CFG_ENABLE_OLED         0   /* SSD1306 OLED 128x64（挂在 I2C2，待接线） */
 
 /* ---------- Middleware 插槽：算法卡 ---------- */
 #define CFG_ENABLE_ATTITUDE     1   /* Mahony 姿态解算（依赖 MPU6050 数据） */
