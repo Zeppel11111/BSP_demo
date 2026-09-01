@@ -2,6 +2,7 @@
 #define     FONT8X16_H
 
 #include    <stdint.h>
+#include    <stddef.h>          /* NULL 定义（空桩返回 NULL 需要） */
 #include    "app_config.h"     /* 模块总开关：必须先于本文件包含 */
 
 /* =====================================================================

@@ -23,11 +23,13 @@
  * ===================================================================== */
 
 /* ---------- Driver 插槽：器件卡 ---------- */
-#define CFG_ENABLE_MPU6050      1   /* MPU6050 六轴传感器（挂在 I2C2） */
+#define CFG_ENABLE_MPU6050      0   /* MPU6050 六轴传感器（挂在 I2C2） */
 #define CFG_ENABLE_OLED         0   /* SSD1306 OLED 128x64（挂在 I2C2，待接线） */
+#define CFG_ENABLE_TAS_GZ       1   /* 塔石温湿度光照传感器（USART2 → RS485 → Modbus-RTU） */
 
 /* ---------- Middleware 插槽：算法卡 ---------- */
-#define CFG_ENABLE_ATTITUDE     1   /* Mahony 姿态解算（依赖 MPU6050 数据） */
+#define CFG_ENABLE_ATTITUDE     0   /* Mahony 姿态解算（依赖 MPU6050 数据） */
+#define CFG_ENABLE_MODBUS       1   /* Modbus-RTU 协议栈（塔石传感器依赖） */
 
 /* 字库卡：与 OLED 高度绑定（OLED 显示文字必须用字库），不单独裁剪，
  * 直接共享 OLED 的开关——OLED=1 字库进固件，OLED=0 字库一并剔除。

@@ -21,4 +21,11 @@ int bsp_uart_init(bsp_uartx_t uartx);
 int bsp_uart_send(bsp_uartx_t uartx, uint8_t *pData, uint16_t Size, uint32_t Timeout, bsp_uart_mode_t mode);
 int bsp_uart_rec_line(bsp_uartx_t uartx, uint8_t *pData, uint16_t Size, uint32_t Timeout, bsp_uart_mode_t mode);
 
+/* 按"帧"接收（Modbus-RTU 等二进制帧）：逐字节收，字节间隔超过 IdleGap 毫秒视为帧结束。
+ * RTOS 友好：内部每 10ms 分片轮询，最坏单次阻塞 10ms。
+ * 返回实际收到的字节数（0~Size）；总超时后：已收到数据返回字节数，一字节未收返回 -2；
+ * -1 参数错 */
+int bsp_uart_rec_frame(bsp_uartx_t uartx, uint8_t *pData, uint16_t Size,
+                       uint32_t ByteTimeout, uint32_t IdleGap);
+
 #endif

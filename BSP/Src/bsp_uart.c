@@ -86,3 +86,48 @@ int bsp_uart_rec_line(bsp_uartx_t uartx, uint8_t *pData,uint16_t Size, uint32_t 
             return -3;   // 不支持的模式
     }
 }
+
+/* 按"帧"接收（Modbus-RTU 等二进制帧）：
+ * 逐字节轮询接收，两次字节间隔超过 IdleGap 毫秒即认为一帧收完。
+ * Modbus-RTU 规范：帧间间隔 >= 3.5 字符时间（9600 波特率下约 4ms）。
+ *
+ * RTOS 友好设计：每次 HAL_UART_Receive 只等 10ms（BSP_UART_POLL_SLICE），
+ * 通过循环累计到 ByteTimeout。这样最坏单次阻塞 10ms，不会把任务
+ * 卡死数百毫秒（否则传感器无响应时一次查询最多占 CPU 200ms）。
+ *
+ * 返回实际字节数；-1 参数错 / -2 超时未收到任何字节 */
+#define BSP_UART_POLL_SLICE_MS   10
+
+int bsp_uart_rec_frame(bsp_uartx_t uartx, uint8_t *pData, uint16_t Size,
+                       uint32_t ByteTimeout, uint32_t IdleGap)
+{
+    uint16_t n = 0;
+    uint32_t t_start, t_last;
+
+    if (uartx >= BSP_UART_COUNT || pData == NULL || Size == 0)
+    {
+        return -1;
+    }
+
+    t_start = HAL_GetTick();
+    t_last  = t_start;
+
+    while (n < Size)
+    {
+        if (HAL_UART_Receive(bsp_uart_handle[uartx], &pData[n], 1,
+                             BSP_UART_POLL_SLICE_MS) == HAL_OK)
+        {
+            n++;
+            t_last = HAL_GetTick();   /* 收到字节：刷新"最后活跃时刻" */
+        }
+        else if (n > 0 && (HAL_GetTick() - t_last) >= IdleGap)
+        {
+            break;   /* 帧间隙超时：一帧收完 */
+        }
+        else if ((HAL_GetTick() - t_start) >= ByteTimeout)
+        {
+            return (n > 0) ? (int)n : -2;   /* 总超时：收到过就返回已收的，否则报无响应 */
+        }
+    }
+    return (int)n;
+}

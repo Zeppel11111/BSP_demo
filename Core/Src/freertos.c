@@ -27,8 +27,8 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "app_config.h"   /* 模块总开关：必须先于各模块头文件 */
-#include "MPU6050.h"
-#include "attitude.h"
+#include "Debug.h"
+#include "TAS_GZ.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -110,7 +110,7 @@ void MX_FREERTOS_Init(void) {
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
   * @brief  Function implementing the defaultTask thread.
-  *         唯一任务：MPU6050 采样 + Mahony 姿态解算 + VOFA+ 角度波形发送
+  *         唯一任务：塔石传感器（温湿度光照）定时采集 + 串口输出
   * @param  argument: Not used
   * @retval None
   */
@@ -118,47 +118,40 @@ void MX_FREERTOS_Init(void) {
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
-  MPU6050_data_t raw = {0};
-  attitude_euler_t euler;
-  float gx, gy, gz;    /* 角速度 rad/s */
-  float ax, ay, az;    /* 加速度 g */
+  TAS_GZ_data_t tas = {0};
+  TickType_t xLastWakeTime;          /* 绝对节拍基准 */
 
-  attitude_init();
-
-  if (MPU6050_init(BSP_IIC2) != 0)
+  /* USART1 = 调试输出（printf，main 里 LOG_init 已初始化），USART2 = 塔石传感器 485 */
+  if (TAS_GZ_init(BSP_UART2) != 0)
   {
     /* 传感器不存在或初始化失败：停住，避免空转刷屏 */
     for(;;) { osDelay(1000); }
   }
 
+  /* 绝对节拍初始化：以当前 tick 为基准点 */
+  xLastWakeTime = xTaskGetTickCount();
+
   /* Infinite loop */
   for(;;)
   {
-    if (MPU6050_read_data(&raw) == 0)
+    if (TAS_GZ_read(&tas) == 0)
     {
-      /* 原始值 → 物理单位（量程 ±250°/s、±2g）：
-         陀螺 /131 → °/s，再 ×π/180 → rad/s
-         加速度 /16384 → g */
-      gx = raw.gyro_x  / 131.0f * 0.01745329f;
-      gy = raw.gyro_y  / 131.0f * 0.01745329f;
-      gz = raw.gyro_z  / 131.0f * 0.01745329f;
-      ax = raw.accel_x / 16384.0f;
-      ay = raw.accel_y / 16384.0f;
-      az = raw.accel_z / 16384.0f;
-
-      attitude_update(gx, gy, gz, ax, ay, az, 0.02f);   /* 50Hz → dt=0.02s */
-      attitude_get_euler(&euler);
-
-      /* VOFA+ FireWater：roll,pitch,yaw（度×10，0.1°分辨率）。
-         任务不感知插槽状态：attitude 空槽时，头文件空桩让
-         get_euler 返回全 0，任务代码无需任何 #if。
+      /* VOFA+ 三通道：温度(0.1℃), 湿度(0.1%), 光照(LUX)。
+         任务不感知插槽状态：TAS_GZ 空槽时，头文件空桩让
+         read 返回 -1，任务代码无需任何 #if。
          用整数是因为 newlib-nano 未链 _printf_float，%f 会静默输出空 */
       printf("%d,%d,%d\n",
-             (int)(euler.roll  * 10.0f),
-             (int)(euler.pitch * 10.0f),
-             (int)(euler.yaw   * 10.0f));
+             (int)tas.temp_x10,
+             (int)tas.humi_x10,
+             (int)tas.lux);
     }
-    osDelay(20);   /* 采样率 50Hz */
+
+    /* vTaskDelayUntil：绝对节拍，每 1000ms 唤醒一次，周期恒定。
+       不用 osDelay(1000) 的原因：相对延时会让"执行时间"累积漂移；
+       不用计数分频的原因：循环体耗时不可控（Modbus 查询约 46ms），
+       次数 ≠ 时间。vTaskDelayUntil 即使某次执行超时，也自动对齐
+       到下一个节拍点，不累积误差——这是周期性任务的唯一正解。 */
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
   }
   /* USER CODE END StartDefaultTask */
 }
