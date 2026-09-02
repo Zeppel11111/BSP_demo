@@ -29,6 +29,7 @@
 #include "app_config.h"   /* 模块总开关：必须先于各模块头文件 */
 #include "Debug.h"
 #include "TAS_GZ.h"
+#include "ESP8266.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -130,6 +131,10 @@ void StartDefaultTask(void *argument)
     /* 传感器不存在或初始化失败：停住，避免空转刷屏 */
     for(;;) { osDelay(1000); }
   }
+
+  /* ESP8266 探活：AT→OK 则驱动内部打印"模块在线"；失败也打印原因，
+     但传感器循环继续跑（互不阻塞）。空槽时（CFG=0）桩函数静默返回 -1 */
+  esp8266_init(BSP_UART3);
 
   /* 绝对节拍初始化：以当前 tick 为基准点 */
   xLastWakeTime = xTaskGetTickCount();
