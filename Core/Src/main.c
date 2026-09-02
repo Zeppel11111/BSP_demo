@@ -90,8 +90,10 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  // MX_USART1_UART_Init();   // 暂时注释：改由 LOG_init() 走 BSP 初始化
-  // MX_USART2_UART_Init();   // 暂时注释：改由 LOG_init() 走 BSP 初始化
+  MX_I2C1_Init();
+  MX_USART1_UART_Init();
+  MX_USART2_UART_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   LOG_init();
   /* USER CODE END 2 */

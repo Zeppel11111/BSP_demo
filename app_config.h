@@ -23,9 +23,10 @@
  * ===================================================================== */
 
 /* ---------- Driver 插槽：器件卡 ---------- */
-#define CFG_ENABLE_MPU6050      0   /* MPU6050 六轴传感器（挂在 I2C2） */
-#define CFG_ENABLE_OLED         0   /* SSD1306 OLED 128x64（挂在 I2C2，待接线） */
+#define CFG_ENABLE_MPU6050      0   /* MPU6050 六轴传感器（未接线，驱动未启用） */
+#define CFG_ENABLE_OLED         0   /* SSD1306 OLED 128x64（未接线，驱动未启用） */
 #define CFG_ENABLE_TAS_GZ       1   /* 塔石温湿度光照传感器（USART2 → RS485 → Modbus-RTU） */
+#define CFG_ENABLE_ESP8266      1   /* ESP8266 WiFi 模块（USART3 → AT 指令，115200） */
 
 /* ---------- Middleware 插槽：算法卡 ---------- */
 #define CFG_ENABLE_ATTITUDE     0   /* Mahony 姿态解算（依赖 MPU6050 数据） */

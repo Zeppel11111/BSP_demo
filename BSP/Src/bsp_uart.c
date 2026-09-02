@@ -4,7 +4,8 @@
 
 static UART_HandleTypeDef *const bsp_uart_handle[BSP_UART_COUNT] = {
     &huart1,
-    &huart2
+    &huart2,
+    &huart3
 };
 
 /* 初始化函数表：默认参数来自 CubeMX，BSP 只负责"认领" */
@@ -12,6 +13,7 @@ typedef void (*bsp_uart_init_fn_t)(void);
 static const bsp_uart_init_fn_t bsp_uart_init_fn[BSP_UART_COUNT] = {
     MX_USART1_UART_Init,
     MX_USART2_UART_Init,
+    MX_USART3_UART_Init,
 };
 
 

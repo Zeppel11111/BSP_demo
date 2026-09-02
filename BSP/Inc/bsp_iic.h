@@ -5,9 +5,8 @@
 
 typedef enum
 {
-    BSP_IIC1=0,
-    BSP_IIC2,
-    BSP_IIC_COUNT      // 做边界
+    BSP_IIC1=0,         /* I2C1：PB6(SCL)/PB7(SDA)，留给 OLED/MPU6050 等 */
+    BSP_IIC_COUNT       /* 做边界。注：I2C2 的 PB10/PB11 已让位给 USART3(ESP8266) */
 
 } bsp_iic_t;
 

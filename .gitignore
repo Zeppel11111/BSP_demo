@@ -1,3 +1,7 @@
 build
 mx.scratch
 !.settings
+
+# 厂商资料与文档（PDF/固件 bin/Keil 例程，体积大且与代码无关，不进仓库）
+塔石传感器/
+ESP8266模块资料/

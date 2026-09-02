@@ -16,17 +16,15 @@ static const char* i2c_err_str(uint32_t ec)
     return "未知";
 }
 
-//指针常量数组，对接底层句柄实体
+//指针常量数组，对接底层句柄实体（只有 I2C1：I2C2 引脚已让位给 USART3）
 static I2C_HandleTypeDef *const bsp_iic_handle[BSP_IIC_COUNT] = {
-    &hi2c1,
-    &hi2c2
+    &hi2c1
 };
 
 /* 初始化函数表：默认参数来自 CubeMX，BSP 只负责"认领" */
 typedef void (*bsp_iic_init_fn_t)(void);
 static const bsp_iic_init_fn_t bsp_iic_init_fn[BSP_IIC_COUNT] = {
-    MX_I2C1_Init,
-    MX_I2C2_Init,
+    MX_I2C1_Init
 };
 
 int bsp_iic_init(bsp_iic_t iicx)
@@ -98,17 +96,10 @@ void bsp_iic_bus_diag(bsp_iic_t iicx)
 
     busy = __HAL_I2C_GET_FLAG(bsp_iic_handle[iicx], I2C_FLAG_BUSY);
 
-    port = GPIOB;
-    if(iicx == BSP_IIC1)
-    {
-        scl_pin = GPIO_PIN_6;    /* PB6  SCL */
-        sda_pin = GPIO_PIN_7;    /* PB7  SDA */
-    }
-    else
-    {
-        scl_pin = GPIO_PIN_10;   /* PB10 SCL */
-        sda_pin = GPIO_PIN_11;   /* PB11 SDA */
-    }
+    /* 只有 I2C1（PB6 SCL / PB7 SDA）了：I2C2 引脚已让位给 USART3 */
+    port    = GPIOB;
+    scl_pin = GPIO_PIN_6;
+    sda_pin = GPIO_PIN_7;
 
     scl = HAL_GPIO_ReadPin(port, scl_pin);
     sda = HAL_GPIO_ReadPin(port, sda_pin);

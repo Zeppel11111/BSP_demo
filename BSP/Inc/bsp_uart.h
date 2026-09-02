@@ -5,8 +5,9 @@
 
 typedef enum
 {
-    BSP_UART1=0,
-    BSP_UART2,
+    BSP_UART1=0,        // 调试口（115200）
+    BSP_UART2,          // RS485 传感器（9600）
+    BSP_UART3,          // ESP8266（115200）
     BSP_UART_COUNT      // 做边界
 
 } bsp_uartx_t;

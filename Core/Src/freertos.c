@@ -54,6 +54,9 @@
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
+  /* 栈 2048B：TAS_GZ_read 单帧 ~300B + printf ~250B 峰值已用 ~900B，
+     实测 1024B 只剩 107B 余量；后续加 ESP8266 AT 缓冲/JSON 拼串还要 ~400B，
+     留足余量。改这里要同步改 .ioc 的 Tasks01 栈参数 */
   .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
@@ -146,6 +149,9 @@ void StartDefaultTask(void *argument)
              (int)tas.lux);
     }
 
+    /* 【临时诊断】每轮打印栈剩余字节：hwm 接近 0 说明栈不够，要加大 */
+    printf("hwm=%u\n", (unsigned)uxTaskGetStackHighWaterMark(NULL));
+
     /* vTaskDelayUntil：绝对节拍，每 1000ms 唤醒一次，周期恒定。
        不用 osDelay(1000) 的原因：相对延时会让"执行时间"累积漂移；
        不用计数分频的原因：循环体耗时不可控（Modbus 查询约 46ms），
@@ -159,4 +165,15 @@ void StartDefaultTask(void *argument)
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 
+/* 栈溢出钩子：configCHECK_FOR_STACK_OVERFLOW=2 时，内核检测到任务栈
+ * 被踩穿会调到这里。打印任务名后停住，便于立刻发现（正常不应触发） */
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+{
+  (void)xTask;
+  taskDISABLE_INTERRUPTS();
+  printf("[FATAL] 栈溢出: %s\r\n", pcTaskName ? pcTaskName : "?");
+  for(;;);
+}
+
 /* USER CODE END Application */
+

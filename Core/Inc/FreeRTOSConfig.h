@@ -64,7 +64,7 @@
 #define configTICK_RATE_HZ                       ((TickType_t)1000)
 #define configMAX_PRIORITIES                     ( 56 )
 #define configMINIMAL_STACK_SIZE                 ((uint16_t)128)
-#define configTOTAL_HEAP_SIZE                    ((size_t)8192)   /* 3KB 不够放两个 2KB 栈的任务，提至 8KB */
+#define configTOTAL_HEAP_SIZE                    ((size_t)8192)
 #define configMAX_TASK_NAME_LEN                  ( 16 )
 #define configUSE_TRACE_FACILITY                 1
 #define configUSE_16_BIT_TICKS                   0
@@ -148,6 +148,8 @@ standard names. */
 
 /* USER CODE BEGIN Defines */
 /* Section where parameter definitions can be added (for instance, to override default ones in FreeRTOS.h) */
+/* 栈溢出检测（方法2：任务切换时检查栈指针余量，需要实现 vApplicationStackOverflowHook） */
+#define configCHECK_FOR_STACK_OVERFLOW        2
 /* USER CODE END Defines */
 
 #endif /* FREERTOS_CONFIG_H */
