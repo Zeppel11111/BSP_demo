@@ -39,7 +39,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+/* 【部署配置】TCP 接收服务器：本机跑 TcpCom 监听此端口（电脑 ipconfig 查 IP） */
+#define NET_SERVER_IP     "172.20.10.2"
+#define NET_SERVER_PORT   9000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -124,6 +126,7 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN StartDefaultTask */
   TAS_GZ_data_t tas = {0};
   TickType_t xLastWakeTime;          /* 绝对节拍基准 */
+  int tcp_ok = 0;                    /* TCP 连接状态：0=未连/已断，1=在线 */
 
   /* USART1 = 调试输出（printf，main 里 LOG_init 已初始化），USART2 = 塔石传感器 485 */
   if (TAS_GZ_init(BSP_UART2) != 0)
@@ -133,8 +136,54 @@ void StartDefaultTask(void *argument)
   }
 
   /* ESP8266 探活：AT→OK 则驱动内部打印"模块在线"；失败也打印原因，
-     但传感器循环继续跑（互不阻塞）。空槽时（CFG=0）桩函数静默返回 -1 */
-  esp8266_init(BSP_UART3);
+     但传感器循环继续跑（互不阻塞）。空槽时（CFG=0）桩函数静默返回 -1。
+     模块与板子同时上电时需 ~1s 引导，首次 AT 可能撞上引导期 →
+     失败则每秒重试探活，最多 3 次，避免偶发"无响应"误报 */
+  {
+    int esp_ok = (esp8266_init(BSP_UART3) == 0);
+    for (int i = 0; !esp_ok && i < 3; i++)
+    {
+      osDelay(1000);
+      esp_ok = (esp8266_at_test() == 0);
+      if (esp_ok)
+      {
+        printf("[I][ESP8266] AT 握手成功（引导重试后）\n");
+      }
+    }
+    if (!esp_ok)
+    {
+      printf("[E][ESP8266] 模块持续无响应，检查 TX/RX 交叉/CH_PD/供电\n");
+    }
+  }
+
+  /* 连热点（模式②：扫描凭据表自动连）。启动时最多阻塞约几秒（扫描+连接），
+     只连一次；断线重连逻辑后续再加。连上后查 IP 打印——看到 IP 即铁证 */
+  {
+    char ip[32] = "?";
+    if (esp8266_auto_join() != 0)
+    {
+      printf("[E][ESP8266] 热点连接失败（查凭据表/热点范围）\n");
+    }
+    else if (esp8266_get_ip(ip, sizeof(ip)) != 0)
+    {
+      printf("[I][ESP8266] WiFi 已连接（IP 查询失败）\n");
+    }
+    else
+    {
+      printf("[I][ESP8266] WiFi 已连接 IP=%s\n", ip);
+    }
+  }
+
+  /* TCP 建连（电脑 TcpCom 需已监听 9000）。失败不阻塞：循环里每轮自动重试 */
+  tcp_ok = (esp8266_tcp_connect(NET_SERVER_IP, NET_SERVER_PORT) == 0);
+  if (tcp_ok)
+  {
+    printf("[I][ESP8266] TCP 已连接 %s:%d\n", NET_SERVER_IP, NET_SERVER_PORT);
+  }
+  else
+  {
+    printf("[E][ESP8266] TCP 连接失败（先开 TcpCom 监听 9000，将每轮重试）\n");
+  }
 
   /* 绝对节拍初始化：以当前 tick 为基准点 */
   xLastWakeTime = xTaskGetTickCount();
@@ -152,10 +201,24 @@ void StartDefaultTask(void *argument)
              (int)tas.temp_x10,
              (int)tas.humi_x10,
              (int)tas.lux);
-    }
 
-    /* 【临时诊断】每轮打印栈剩余字节：hwm 接近 0 说明栈不够，要加大 */
-    printf("hwm=%u\n", (unsigned)uxTaskGetStackHighWaterMark(NULL));
+      /* 上行：拼一行数据经 WiFi 发给服务器（格式与串口一致，服务器按行解析）。
+         断线自动重连：发送失败置 tcp_ok=0，下一轮先重连再发 */
+      {
+        char uplink[32];
+        int  n = snprintf(uplink, sizeof(uplink), "%d,%d,%d",
+                          (int)tas.temp_x10, (int)tas.humi_x10, (int)tas.lux);
+        if (!tcp_ok)
+        {
+          tcp_ok = (esp8266_tcp_connect(NET_SERVER_IP, NET_SERVER_PORT) == 0);
+        }
+        if (tcp_ok && esp8266_send_data((uint8_t*)uplink, (uint16_t)n) != 0)
+        {
+          tcp_ok = 0;   /* 连接断了，下轮重连 */
+          printf("[E][ESP8266] 发送失败，准备重连\n");
+        }
+      }
+    }
 
     /* vTaskDelayUntil：绝对节拍，每 1000ms 唤醒一次，周期恒定。
        不用 osDelay(1000) 的原因：相对延时会让"执行时间"累积漂移；
