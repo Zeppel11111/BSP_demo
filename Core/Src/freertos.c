@@ -39,8 +39,13 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-/* 【部署配置】TCP 接收服务器：本机跑 TcpCom 监听此端口（电脑 ipconfig 查 IP） */
-#define NET_SERVER_IP     "172.20.10.2"
+/* 【部署配置】TCP 接收服务器：电脑上跑 server.py 监听 9000，板子连这里。
+   服务器 IP 随网络环境变化，两种常用场景：
+     电脑开"移动热点"给板子连 → 电脑固定是 192.168.137.1（查 ipconfig 里
+     网段 192.168.137.1 那张"无线网络连接* N"网卡）
+     iPhone 开热点            → 电脑是 172.20.10.2
+   换环境改这里一行即可，端口不变。 */
+#define NET_SERVER_IP     "192.168.137.1"
 #define NET_SERVER_PORT   9000
 /* USER CODE END PD */
 
@@ -202,11 +207,12 @@ void StartDefaultTask(void *argument)
              (int)tas.humi_x10,
              (int)tas.lux);
 
-      /* 上行：拼一行数据经 WiFi 发给服务器（格式与串口一致，服务器按行解析）。
+      /* 上行：拼一行数据经 WiFi 发给服务器（行格式 = 数据契约，服务器按 \n 分行：
+         温度x10,湿度x10,光照\n ；末尾 \n 是行结束符，服务器靠它切行）。
          断线自动重连：发送失败置 tcp_ok=0，下一轮先重连再发 */
       {
         char uplink[32];
-        int  n = snprintf(uplink, sizeof(uplink), "%d,%d,%d",
+        int  n = snprintf(uplink, sizeof(uplink), "%d,%d,%d\n",
                           (int)tas.temp_x10, (int)tas.humi_x10, (int)tas.lux);
         if (!tcp_ok)
         {
@@ -220,12 +226,14 @@ void StartDefaultTask(void *argument)
       }
     }
 
-    /* vTaskDelayUntil：绝对节拍，每 1000ms 唤醒一次，周期恒定。
-       不用 osDelay(1000) 的原因：相对延时会让"执行时间"累积漂移；
-       不用计数分频的原因：循环体耗时不可控（Modbus 查询约 46ms），
-       次数 ≠ 时间。vTaskDelayUntil 即使某次执行超时，也自动对齐
-       到下一个节拍点，不累积误差——这是周期性任务的唯一正解。 */
-    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
+    /* vTaskDelayUntil：绝对节拍，上报周期 = 30 秒（想改间隔只改这里）。
+       每 30 秒：读一次传感器 → 串口打印 → WiFi 上行一行。
+       原为 1000ms（调试期看实时曲线），植物监测 30s 已足够：
+       数据量从 8.6 万条/天 降到 2880 条/天，cpolar 免费流量也省。
+       不用 osDelay 的原因：相对延时会让"执行时间"累积漂移；
+       vTaskDelayUntil 即使某次执行超时，也自动对齐到下一个节拍点，
+       不累积误差——这是周期性任务的唯一正解。 */
+    vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(30000));
   }
   /* USER CODE END StartDefaultTask */
 }
